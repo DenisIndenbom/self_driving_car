@@ -2,7 +2,7 @@ import torch
 
 from numpy.random import choice
 
-__all__ = ['AIAgent', 'Data']
+__all__ = ['AIAgent', 'Sample']
 
 
 class NN(torch.nn.Module):
@@ -43,47 +43,27 @@ class NN(torch.nn.Module):
         return self.softmax(actions_weight)
 
 
-class Data:
-    def __init__(self):
-        self.action_ids = []  # actions
-        self.X = []  # ladars values
-        self.y = []  # rewards
+class Sample:
+    def __init__(self, X: list, y: float, action_id):
+        self.X = X  # ladars values
+        self.y = y  # rewards
+        self.action_id = action_id  # action
 
-    def add_row(self, action_id: int, X: list, y: float):
+    def get_processed_sample(self, n_actions) -> (torch.tensor, torch.tensor, torch.tensor):
         """
-        Add row to data
-        :param action_id: action (integer)
-        :param X: ladar values (list)
-        :param y: rewards float
-        :return: None
+        Get processed sample
+        :param n_actions: num of actions
+        :return: 3d-tuple with tensors
         """
-        self.action_ids.append(action_id)
-        self.X.append(X)
-        self.y.append(y)
+        action = torch.zeros(n_actions)
+        action[self.action_id] = 1
 
-    def get_processed_data(self, n_actions) -> (torch.tensor, torch.tensor, torch.tensor):
-        actions = torch.zeros(len(self.action_ids), n_actions)
-        for i, row in enumerate(self.action_ids):
-            actions[i, row] = 1.
+        action = action.unsqueeze(0).unsqueeze(0)
 
-        actions = actions.unsqueeze(0)
+        X = torch.as_tensor(self.X).unsqueeze(0).unsqueeze(0)
+        y = torch.as_tensor([self.y]).unsqueeze(0).unsqueeze(0)
 
-        X = torch.as_tensor(self.X).unsqueeze(0)
-        y = torch.as_tensor(self.y).unsqueeze(0)
-
-        # shuffle data
-        shuffle = torch.randperm(X.size()[1])
-
-        X = X[:, shuffle]
-        y = y[:, shuffle]
-        actions = actions[:, shuffle]
-
-        return X, y, actions
-
-    def clear_all_data(self):
-        self.X = []
-        self.y = []
-        self.action_ids = []
+        return X, y, action
 
 
 class AIAgent:
@@ -120,29 +100,24 @@ class AIAgent:
         """
         torch.save(self.nn.state_dict(), self.model_path)
 
-    def step(self, data: Data):
-        X, y, actions = data.get_processed_data(self.nn.n_actions)
+    def step(self, data: Sample):
+        X, y, actions = data.get_processed_sample(self.nn.n_actions)
 
         X = X.to(self.device)
         y = y.to(self.device)
         actions = actions.to(self.device)
 
-        last_loss = None
+        self.optimizer.zero_grad()
 
-        for _ in range(3):
-            self.optimizer.zero_grad()
+        predicted = self.nn.forward(actions, X)
 
-            predicted = self.nn.forward(actions, X)
+        loss_value = self.loss(predicted.squeeze(2), y)
 
-            loss_value = self.loss(predicted.squeeze(2), y)
+        loss_value.backward()
 
-            loss_value.backward()
+        self.optimizer.step()
 
-            self.optimizer.step()
-
-            last_loss = loss_value.item()
-
-        print(f'loss {last_loss}')
+        print(f'loss {loss_value.item()}')
 
         self.save()
 

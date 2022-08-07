@@ -64,8 +64,8 @@ class Car(GameObject):
 
         # car AI
         self.ai = AIAgent(6, 7, 16, gpu_mode=True, model_path=path, load=load_ai, train=train)
-        self.data = Data()
         self.train = train
+
 
     def update(self):
         self.img = rotate_img(self.original_img, self.angle)
@@ -84,10 +84,9 @@ class Car(GameObject):
         if self.train:
             reward = self.get_reward(flag, ladar_values)
 
-            self.data.add_row(action_id, ladar_values, reward)
+            sample = Sample(ladar_values, reward, action_id)
 
-            if flag == 0:
-                self.ai.step(self.data)
+            self.ai.step(sample)
 
     def render(self, screen: Surface):
         screen.blit(self.img, (self.x - self.img.get_width() / 2, self.y - self.img.get_height() / 2))
