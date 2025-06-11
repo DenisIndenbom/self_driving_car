@@ -7,9 +7,7 @@ __all__ = ['rotate_img', 'line_intersection', 'get_end_point_of_line']
 
 
 def rotate_img(img: Surface, angle: float) -> Surface:
-    new_img = rotate(img, int(angle))
-
-    return new_img
+    return rotate(img, int(angle))
 
 
 def get_end_point_of_line(start_pos: tuple,

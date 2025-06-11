@@ -59,7 +59,7 @@ class Entity(ABC):
         pass
 
     @abstractmethod
-    def update(self, action: Action) -> tuple[State, int | float]:
+    def update(self, action: Action, delta: float = 0.0) -> tuple[State, int | float, bool]:
         pass
 
     @abstractmethod

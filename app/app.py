@@ -17,7 +17,7 @@ class App:
 
         self.is_render = is_render
 
-        self.map = Map('../map.json')
+        self.map = Map('../empty_map.json')
 
         self.objects = [Car((520, 670), 180, self.map)]
         self.agents = [PlayerAgent()]
@@ -25,28 +25,39 @@ class App:
 
         assert len(self.objects) == len(self.agents)
 
-    def run(self):
-        # Init states list
-        for obj in self.objects:
-            self.states.append(obj.update(CarAction(0))[0])
+    def run(self, epochs=1):
+        for epoch in range(epochs):
+            # Init states list
+            self.states = []
 
-        while True:
-            if self.is_render and pygame.event.poll().type == pygame.QUIT:
-                pygame.quit()
-                break
+            for obj in self.objects:
+                self.states.append(obj.update(CarAction(0))[0])
 
-            for obj, agent, (state_id, state) in zip(self.objects, self.agents, enumerate(self.states)):
-                action = agent.step(state)
-                new_state, reward = obj.update(action)
-                agent.observe(state, action, new_state, reward)
+            running = True
+            delta = 1.0
 
-                # Update current states
-                self.states[state_id] = new_state
+            while running:
+                if self.is_render and pygame.event.poll().type == pygame.QUIT:
+                    pygame.quit()
+                    break
 
-            if self.is_render:
-                self.render()
+                for obj, agent, (state_id, state) in zip(self.objects, self.agents, enumerate(self.states)):
+                    # Predict the next action
+                    action = agent.step(state)
+                    new_state, reward, done = obj.update(action, delta)
+                    agent.observe(state, action, new_state, reward)
 
-    def render(self):
+                    # Update current states
+                    self.states[state_id] = new_state
+
+                    if done:
+                        running = False
+                        break
+
+                if self.is_render:
+                    delta = self.render()
+
+    def render(self) -> float:
         self.screen.fill((0, 0, 0))
 
         self.map.draw(self.screen)
@@ -55,7 +66,8 @@ class App:
             obj.render(self.screen)
 
         pygame.display.flip()
-        self.clock.tick(60)
+
+        return self.clock.tick(60) / 1000
 
 
 if __name__ == '__main__':
