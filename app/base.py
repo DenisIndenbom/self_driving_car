@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from pygame import Surface, draw
 
-__all__ = ['Line', 'Map', 'GameObject', 'Component', 'State', 'Action']
+__all__ = ['Line', 'Map', 'Entity', 'Component', 'Agent', 'State', 'Action']
 
 
 class Line:
@@ -31,7 +31,7 @@ class Map:
             try:
                 self.rewards.append(Line((int(row[0]), int(row[1])), (int(row[2]), int(row[3]))))
             except IndexError:
-                pass
+                pass  # TODO: Fix this crunch
 
     def draw(self, screen: Surface):
         for row in self.borders:
@@ -53,9 +53,13 @@ class Action(ABC):
         pass
 
 
-class GameObject(ABC):
+class Entity(ABC):
     @abstractmethod
-    def update(self, action: Action) -> tuple[State, int]:
+    def init_state(self) -> State:
+        pass
+
+    @abstractmethod
+    def update(self, action: Action) -> tuple[State, int | float]:
         pass
 
     @abstractmethod
@@ -66,4 +70,38 @@ class GameObject(ABC):
 class Component(ABC):
     @abstractmethod
     def update(self, *args, **kwargs):
+        pass
+
+
+class Agent(ABC):
+    @abstractmethod
+    def step(self, state: State) -> Action:
+        pass
+
+    @abstractmethod
+    def observe(self, state: State, action: Action, new_state: State, reward: int | float):
+        pass
+
+    @abstractmethod
+    def update_policy(self):
+        pass
+
+    @abstractmethod
+    def eval(self):
+        pass
+
+    @abstractmethod
+    def train(self):
+        pass
+
+    @abstractmethod
+    def reset(self):
+        pass
+
+    @abstractmethod
+    def save(self, path: str):
+        pass
+
+    @abstractmethod
+    def load(self, path: str):
         pass

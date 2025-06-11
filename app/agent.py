@@ -1,11 +1,59 @@
+import keyboard as kb
 import torch
-
 from numpy.random import choice
 
-__all__ = ['AIAgent', 'Sample']
+from base import Agent, State, Action
+from car import CarAction
+
+__all__ = ['PlayerAgent', 'AIAgent', 'Sample']
 
 
-# TODO: Delete this shit and make a new shit
+class PlayerAgent(Agent):
+    """ Default car agent for debugging """
+
+    def step(self, state: State) -> Action:
+        up = kb.is_pressed('up')
+        down = kb.is_pressed('down')
+        right = kb.is_pressed('right')
+        left = kb.is_pressed('left')
+
+        direction = 0
+        if up and not down:
+            direction = 1
+        elif down and not up:
+            direction = 2
+
+        turn = 0
+        if right and not left:
+            turn = 1
+        elif left and not right:
+            turn = 2
+
+        return CarAction((direction * 3) + turn)
+
+    def observe(self, state: State, action: Action, new_state: State, reward: int | float):
+        pass
+
+    def update_policy(self):
+        pass
+
+    def eval(self):
+        pass
+
+    def train(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def save(self, path: str):
+        pass
+
+    def load(self, path: str):
+        pass
+
+
+# TODO: Delete the shit below and make a new shit
 
 class NN(torch.nn.Module):
     def __init__(self, n_actions: int, input_size: int, hidden_size: int):

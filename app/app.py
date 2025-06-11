@@ -1,60 +1,61 @@
-import keyboard as kb
 import pygame
 
 import config
-from base import Map
+from agent import PlayerAgent
+from base import Map, State
 from car import Car, CarAction
 
 
 class App:
-    def __init__(self, display_width, display_height):
-        pygame.init()
-        self.screen = pygame.display.set_mode((display_width, display_height))
-        self.screen.fill((135, 206, 250))
-        pygame.display.set_caption('self_driving_car')
+    def __init__(self, display_width, display_height, is_render=True):
+        if is_render:
+            pygame.init()
+            self.screen = pygame.display.set_mode((display_width, display_height))
+            pygame.display.set_caption('self_driving_car')
 
-        self.clock = pygame.time.Clock()
+            self.clock = pygame.time.Clock()
+
+        self.is_render = is_render
 
         self.map = Map('../map.json')
 
-        self.objects = [Car((520, 670), 0, self.map)]
+        self.objects = [Car((520, 670), 180, self.map)]
+        self.agents = [PlayerAgent()]
+        self.states: list[State] = []
 
-    @staticmethod
-    def control():
-        up = kb.is_pressed('up')
-        down = kb.is_pressed('down')
-        right = kb.is_pressed('right')
-        left = kb.is_pressed('left')
-
-        direction = 0
-        if up and not down:
-            direction = 1
-        elif down and not up:
-            direction = 2
-
-        turn = 0
-        if right and not left:
-            turn = 1
-        elif left and not right:
-            turn = 2
-
-        return CarAction((direction * 3) + turn)
+        assert len(self.objects) == len(self.agents)
 
     def run(self):
+        # Init states list
+        for obj in self.objects:
+            self.states.append(obj.update(CarAction(0))[0])
+
         while True:
-            if pygame.event.poll().type == pygame.QUIT:
-                exit()
+            if self.is_render and pygame.event.poll().type == pygame.QUIT:
+                pygame.quit()
+                break
 
-            self.screen.fill((0, 0, 0))
+            for obj, agent, (state_id, state) in zip(self.objects, self.agents, enumerate(self.states)):
+                action = agent.step(state)
+                new_state, reward = obj.update(action)
+                agent.observe(state, action, new_state, reward)
 
-            self.map.draw(self.screen)
+                # Update current states
+                self.states[state_id] = new_state
 
-            for obj in self.objects:
-                obj.update(self.control())
-                obj.render(self.screen)
+            if self.is_render:
+                self.render()
 
-            pygame.display.flip()
-            self.clock.tick(60)
+    def render(self):
+        self.screen.fill((0, 0, 0))
+
+        self.map.draw(self.screen)
+
+        for obj in self.objects:
+            obj.render(self.screen)
+
+        pygame.display.flip()
+        self.clock.tick(60)
 
 
 if __name__ == '__main__':

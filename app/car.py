@@ -27,7 +27,7 @@ class CarAction(Action):
         return self.action_id
 
 
-class Car(GameObject):
+class Car(Entity):
     def __init__(self,
                  pos: tuple,
                  angle: float,
@@ -70,6 +70,9 @@ class Car(GameObject):
 
         # car collision
         self.collision = BoxCollision(self.img.get_width(), self.img.get_height(), self.map)
+
+    def init_state(self) -> State:
+        return CarState(self.get_ladar_values(), self.speed, self.angle)
 
     def update(self, action: Action):
         self.img = rotate_img(self.original_img, self.angle)
