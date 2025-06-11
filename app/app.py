@@ -17,9 +17,9 @@ class App:
 
         self.is_render = is_render
 
-        self.map = Map('../empty_map.json')
+        self.map = Map('../map.json')
 
-        self.objects = [Car((520, 670), 180, self.map)]
+        self.objects = [Car((520, 670), 0, self.map)]
         self.agents = [PlayerAgent()]
         self.states: list[State] = []
 

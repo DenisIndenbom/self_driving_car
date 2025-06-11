@@ -82,14 +82,14 @@ class Car(Entity):
         flag = self.collision.update((self.x, self.y), self.angle)
 
         done = False
+        reward = self.get_reward(flag)
+        ladars = self.get_ladar_values()
 
         if flag == CollisionFlag.Collide:
             self.respawn()
             done = True
 
-        ladars = self.get_ladar_values()
-
-        return CarState(ladars, self.speed, self.angle), self.get_reward(flag), done
+        return CarState(ladars, self.speed, self.angle), reward, done
 
     def render(self, screen: Surface):
         screen.blit(self.img, (self.x - self.img.get_width() / 2, self.y - self.img.get_height() / 2))
@@ -202,15 +202,15 @@ class Car(Entity):
         self.angle = self.spawn_angle
         self.vec_angle = self.angle
 
-    @staticmethod
-    def get_reward(flag: CollisionFlag) -> float:
+    def get_reward(self, flag: CollisionFlag) -> float:
         reward = 0.
+        speed_factor = (self.speed / self.max_speed)
 
         if flag == CollisionFlag.Collide:
-            reward -= 1
+            reward -= 1 + speed_factor
         elif flag == CollisionFlag.Reward:
-            reward += 0.5
+            reward += 5 * speed_factor if speed_factor > 0.01 else -1  # Punish if agent get stuck
         elif flag == CollisionFlag.Nothing:
-            reward -= 0.1
+            reward -= 0.1 + (1 - speed_factor)
 
         return reward
