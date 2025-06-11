@@ -1,45 +1,44 @@
-import pygame
-import config
-
 import keyboard as kb
+import pygame
 
-from base_classes import Map
-from game_objects import Car
+import config
+from base import Map
+from car import Car, CarAction
 
-import keepAwake
-
-keepAwake.enable()
 
 class App:
     def __init__(self, display_width, display_height):
         pygame.init()
         self.screen = pygame.display.set_mode((display_width, display_height))
         self.screen.fill((135, 206, 250))
-        pygame.display.set_caption("self-driving_car")
+        pygame.display.set_caption('self_driving_car')
 
         self.clock = pygame.time.Clock()
 
         self.map = Map('../map.json')
 
-        self.objects = [Car((520, 670), 0, self.map, load_ai=False)]
+        self.objects = [Car((520, 670), 0, self.map)]
 
     @staticmethod
     def control():
-        action_id = -1
-        if kb.is_pressed("up"):
-            action_id = 0
-        if kb.is_pressed("down"):
-            action_id = 1
-        if kb.is_pressed("up") and kb.is_pressed("right"):
-            action_id = 2
-        if kb.is_pressed("up") and kb.is_pressed("left"):
-            action_id = 3
-        if kb.is_pressed("down") and kb.is_pressed("right"):
-            action_id = 4
-        if kb.is_pressed("down") and kb.is_pressed("left"):
-            action_id = 5
+        up = kb.is_pressed('up')
+        down = kb.is_pressed('down')
+        right = kb.is_pressed('right')
+        left = kb.is_pressed('left')
 
-        return action_id
+        direction = 0
+        if up and not down:
+            direction = 1
+        elif down and not up:
+            direction = 2
+
+        turn = 0
+        if right and not left:
+            turn = 1
+        elif left and not right:
+            turn = 2
+
+        return CarAction((direction * 3) + turn)
 
     def run(self):
         while True:
@@ -51,11 +50,13 @@ class App:
             self.map.draw(self.screen)
 
             for obj in self.objects:
-                obj.update()
+                obj.update(self.control())
                 obj.render(self.screen)
 
             pygame.display.flip()
             self.clock.tick(60)
 
-app = App(config.DISPLAY_WIDTH, config.DISPLAY_HEIGHT)
-app.run()
+
+if __name__ == '__main__':
+    app = App(config.DISPLAY_WIDTH, config.DISPLAY_HEIGHT)
+    app.run()

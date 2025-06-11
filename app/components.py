@@ -1,24 +1,28 @@
 import math
+from enum import Enum
 
-from base_classes import Map, Line
-
-from abstract_classes import Component
-
+from base import Map, Line, Component
 from utils import line_intersection
 
-__all__ = ['BoxCollision']
+__all__ = ['BoxCollision', 'CollisionFlag']
+
+
+class CollisionFlag(Enum):
+    Collide = 0
+    Reward = 1
+    Nothing = 2
 
 
 class BoxCollision(Component):
-    def __init__(self, width, height, map: Map):
+    def __init__(self, width, height, env_map: Map):
         self.width = width
         self.height = height
 
         self.lines = [Line() for _ in range(4)]
 
-        self.map = map
+        self.map = env_map
 
-    def update(self, pos, angle) -> int:
+    def update(self, pos, angle) -> CollisionFlag:
         """
         Box collision
         :param pos: object pos (tuple)
@@ -45,21 +49,21 @@ class BoxCollision(Component):
         self.lines[2] = Line(fr, rr)
         self.lines[3] = Line(rr, rl)
 
-        for l in self.lines:
-            for line in self.map.borders:
-                success, x, y = line_intersection([l.start, l.end], [line.start, line.end])
-                if success:
-                    return 0
+        for line in self.lines:
+            for border in self.map.borders:
+                success, x, y = line_intersection([line.start, line.end], [border.start, border.end])
 
-        is_break = False
-        for l in self.lines:
-            if is_break:
-                break
-            for line in self.map.rewards:
-                success, x, y = line_intersection([l.start, l.end], [line.start, line.end])
                 if success:
-                    return 1
+                    return CollisionFlag.Collide
+
+        for line in self.lines:
+            for reward in self.map.rewards:
+                success, x, y = line_intersection([line.start, line.end], [reward.start, reward.end])
+
+                if success:
+                    return CollisionFlag.Reward
 
         # for row in self.lines:
         #     pygame.draw.line(self.scr,(255,0,0),row.start,row.end)
-        return None
+
+        return CollisionFlag.Nothing

@@ -5,6 +5,8 @@ from numpy.random import choice
 __all__ = ['AIAgent', 'Sample']
 
 
+# TODO: Delete this shit and make a new shit
+
 class NN(torch.nn.Module):
     def __init__(self, n_actions: int, input_size: int, hidden_size: int):
         super().__init__()
@@ -38,14 +40,16 @@ class NN(torch.nn.Module):
             actions = torch.zeros(x.shape[0], self.n_actions).to(device)
             actions[:, i] = 1.
 
-            actions_weight[:, i] = self.forward(actions, x)
+            predicted = self.forward(actions, x)
+
+            actions_weight[:, i] = predicted
 
         return self.softmax(actions_weight)
 
 
 class Sample:
-    def __init__(self, X: list, y: float, action_id):
-        self.X = X  # ladars values
+    def __init__(self, x: list, y: float, action_id):
+        self.X = x  # ladars values
         self.y = y  # rewards
         self.action_id = action_id  # action
 
@@ -60,10 +64,10 @@ class Sample:
 
         action = action.unsqueeze(0).unsqueeze(0)
 
-        X = torch.as_tensor(self.X).unsqueeze(0).unsqueeze(0)
-        y = torch.as_tensor([self.y]).unsqueeze(0).unsqueeze(0)
+        x = torch.as_tensor(self.X, dtype=torch.float).unsqueeze(0).unsqueeze(0)
+        y = torch.as_tensor([self.y], dtype=torch.float).unsqueeze(0).unsqueeze(0)
 
-        return X, y, action
+        return x, y, action
 
 
 class AIAgent:
@@ -90,7 +94,7 @@ class AIAgent:
         else:
             self.nn.eval()
 
-        self.optimizer = torch.optim.Adam(self.nn.parameters(), lr=0.01)
+        self.optimizer = torch.optim.Adam(self.nn.parameters(), lr=0.0001)
         self.loss = torch.nn.MSELoss()
 
     def save(self):
@@ -100,24 +104,22 @@ class AIAgent:
         """
         torch.save(self.nn.state_dict(), self.model_path)
 
-    def step(self, data: Sample):
-        X, y, actions = data.get_processed_sample(self.nn.n_actions)
+    def step(self, sample: Sample):
+        x, y, actions = sample.get_processed_sample(self.nn.n_actions)
 
-        X = X.to(self.device)
+        x = x.to(self.device)
         y = y.to(self.device)
         actions = actions.to(self.device)
 
         self.optimizer.zero_grad()
 
-        predicted = self.nn.forward(actions, X)
+        predicted = self.nn.forward(actions, x)
 
-        loss_value = self.loss(predicted.squeeze(2), y)
+        loss_value = self.loss(predicted, y)
 
         loss_value.backward()
 
         self.optimizer.step()
-
-        print(f'loss {loss_value.item()}')
 
         self.save()
 

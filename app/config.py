@@ -1,6 +1,2 @@
 DISPLAY_HEIGHT = 720
 DISPLAY_WIDTH = 1280
-
-REWARD = "Reward"
-FINISH = "Finish"
-TRACK = "Track"
