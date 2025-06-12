@@ -22,6 +22,7 @@ class App:
         self.objects = [Car((520, 670), 0, self.map)]
         self.agents = [PlayerAgent()]
         self.states: list[State] = []
+        self.dones = [False] * len(self.agents)
 
         assert len(self.objects) == len(self.agents)
 
@@ -33,26 +34,25 @@ class App:
             for obj in self.objects:
                 self.states.append(obj.update(CarAction(0))[0])
 
-            running = True
             delta = 1.0
 
-            while running:
+            while True:
                 if self.is_render and pygame.event.poll().type == pygame.QUIT:
                     pygame.quit()
                     break
 
-                for obj, agent, (state_id, state) in zip(self.objects, self.agents, enumerate(self.states)):
+                for idx, (obj, agent, state) in enumerate(zip(self.objects, self.agents, self.states)):
                     # Predict the next action
                     action = agent.step(state)
                     new_state, reward, done = obj.update(action, delta)
                     agent.observe(state, action, new_state, reward)
 
                     # Update current states
-                    self.states[state_id] = new_state
+                    self.states[idx] = new_state
+                    self.dones[idx] = done
 
-                    if done:
-                        running = False
-                        break
+                if all(self.dones):
+                    break
 
                 if self.is_render:
                     delta = self.render()

@@ -1,5 +1,6 @@
 import math
 
+from pygame import draw as pygame_draw
 from pygame import image, Surface, transform
 
 from base import *
@@ -71,6 +72,11 @@ class Car(Entity):
         # car collision
         self.collision = BoxCollision(self.img.get_width(), self.img.get_height(), self.map)
 
+        # car ladars
+        self.ladar_depth = 300
+        self.ladar_angles = [0, 30, -30, 80, -80, 140, -140]
+        self.draw_ladar = False
+
     def init_state(self) -> State:
         return CarState(self.get_ladar_values(), self.speed, self.angle)
 
@@ -92,6 +98,15 @@ class Car(Entity):
         return CarState(ladars, self.speed, self.angle), reward, done
 
     def render(self, screen: Surface):
+        if self.draw_ladar:
+            start = (self.x, self.y)
+            for angle, value in zip(self.ladar_angles, self.get_ladar_values()):
+                end = get_end_point_of_line(start, self.angle, angle, self.ladar_depth)
+                pygame_draw.line(screen, (255, 0, 0), start, end, 2)
+
+                point = get_end_point_of_line(start, self.angle, angle, value * self.ladar_depth)
+                pygame_draw.circle(screen, (0, 255, 0), point, 3)
+
         screen.blit(self.img, (self.x - self.img.get_width() / 2, self.y - self.img.get_height() / 2))
 
     def movement(self, action=-1, delta: float = 0.0):
@@ -165,32 +180,21 @@ class Car(Entity):
 
     def get_ladar_values(self) -> list:
         start = (self.x, self.y)
-        ladar_depth = 300
-
         ladar_values = []
 
-        ladar_lines = \
-            [
-                Line(start, get_end_point_of_line(start, self.angle, 0, ladar_depth)),
-                Line(start, get_end_point_of_line(start, self.angle, 30, ladar_depth)),
-                Line(start, get_end_point_of_line(start, self.angle, -30, ladar_depth)),
-                Line(start, get_end_point_of_line(start, self.angle, 80, ladar_depth)),
-                Line(start, get_end_point_of_line(start, self.angle, -80, ladar_depth)),
-                Line(start, get_end_point_of_line(start, self.angle, 140, ladar_depth)),
-                Line(start, get_end_point_of_line(start, self.angle, -140, ladar_depth))
-            ]
-
-        for row in ladar_lines:
+        for angle in self.ladar_angles:
             min_length = 1
             distance = []
+
+            end = get_end_point_of_line(start, self.angle, angle, self.ladar_depth)
+
             for line in self.map.borders:
-                success, x, y = line_intersection([row.start, row.end], [line.start, line.end])
+                success, x, y = line_intersection([start, end], [line.start, line.end])
                 if success:
-                    min_length = min(min_length, math.hypot(x - self.x, y - self.y) / ladar_depth)
+                    min_length = min(min_length, math.hypot(x - self.x, y - self.y) / self.ladar_depth)
+                    distance.append(min_length)
 
-                distance.append(min_length)
-
-            ladar_values.append(min(distance) if len(distance) > 0 else 0)
+            ladar_values.append(min(distance) if len(distance) > 0 else 1)
 
         return ladar_values
 

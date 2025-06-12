@@ -1,6 +1,7 @@
 import json
 from abc import ABC, abstractmethod
 
+import pygame
 from pygame import Surface, draw
 
 __all__ = ['Line', 'Map', 'Entity', 'Component', 'Agent', 'State', 'Action']
@@ -10,6 +11,9 @@ class Line:
     def __init__(self, start=(0, 0), end=(0, 0)):
         self.start = start
         self.end = end
+
+    def draw(self, screen):
+        pygame.draw.line(screen, (0, 255, 0), self.start, self.end, 3)
 
 
 class Map:
