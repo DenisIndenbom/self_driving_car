@@ -91,6 +91,21 @@ class Agent(ABC):
         pass
 
     @abstractmethod
+    def merge_policy(self, agent: 'Agent', ratio: float) -> 'Agent':
+        """
+        Merge policy of another agent and return a new agent.
+
+        :param agent: Agent to merge.
+        :param ratio: Ratio of new agent to merge.
+        :return: New agent.
+        """
+        pass
+
+    @abstractmethod
+    def render(self, screen: Surface):
+        pass
+
+    @abstractmethod
     def eval(self):
         pass
 

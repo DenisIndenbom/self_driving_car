@@ -37,6 +37,9 @@ class PlayerAgent(Agent):
     def update_policy(self):
         pass
 
+    def merge_policy(self, agent: Agent, ratio: float) -> Agent:
+        pass
+
     def eval(self):
         pass
 
