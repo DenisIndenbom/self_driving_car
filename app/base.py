@@ -59,7 +59,7 @@ class Action(ABC):
 
 class Entity(ABC):
     @abstractmethod
-    def init_state(self) -> State:
+    def reset(self) -> State:
         pass
 
     @abstractmethod
@@ -99,10 +99,6 @@ class Agent(ABC):
         :param ratio: Ratio of new agent to merge.
         :return: New agent.
         """
-        pass
-
-    @abstractmethod
-    def render(self, screen: Surface):
         pass
 
     @abstractmethod

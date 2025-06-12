@@ -50,9 +50,14 @@ class Car(Entity):
         self.spawn_angle = self.angle
 
         # car sprite
-        self.original_img = image.load('../sprites/Black_viper.png').convert_alpha()
-        self.original_img = transform.scale(self.original_img, (int(214 * 0.2), int(100 * 0.2)))
-        self.img = self.original_img
+        width, height = (int(214 * 0.2), int(100 * 0.2))
+
+        try:
+            self.original_img = image.load('../sprites/Black_viper.png').convert_alpha()
+            self.original_img = transform.scale(self.original_img, (width, height))
+            self.img = self.original_img
+        except Exception:
+            pass
 
         # car properties
         self.speed = 0.
@@ -70,32 +75,30 @@ class Car(Entity):
         self.vec_angle = 0.
 
         # car collision
-        self.collision = BoxCollision(self.img.get_width(), self.img.get_height(), self.map)
+        self.collision = BoxCollision(width, height, self.map)
 
         # car ladars
         self.ladar_depth = 300
+        self.ladar_num = 7
         self.ladar_angles = [0, 30, -30, 80, -80, 140, -140]
         self.draw_ladar = False
 
-    def init_state(self) -> State:
+        assert self.ladar_num == len(self.ladar_angles)
+
+    def reset(self) -> State:
+        self.respawn()
+
         return CarState(self.get_ladar_values(), self.speed, self.angle)
 
     def update(self, action: Action, delta: float = 0.0) -> tuple[State, int | float, bool]:
-        self.img = rotate_img(self.original_img, self.angle)
-
         self.movement(action.get(), delta)
 
         flag = self.collision.update((self.x, self.y), self.angle)
 
-        done = False
         reward = self.get_reward(flag)
         ladars = self.get_ladar_values()
 
-        if flag == CollisionFlag.Collide:
-            self.respawn()
-            done = True
-
-        return CarState(ladars, self.speed, self.angle), reward, done
+        return CarState(ladars, self.speed, self.angle), reward, (flag == CollisionFlag.Collide)
 
     def render(self, screen: Surface):
         if self.draw_ladar:
@@ -107,6 +110,7 @@ class Car(Entity):
                 point = get_end_point_of_line(start, self.angle, angle, value * self.ladar_depth)
                 pygame_draw.circle(screen, (0, 255, 0), point, 3)
 
+        self.img = rotate_img(self.original_img, self.angle)
         screen.blit(self.img, (self.x - self.img.get_width() / 2, self.y - self.img.get_height() / 2))
 
     def movement(self, action=-1, delta: float = 0.0):
@@ -215,6 +219,6 @@ class Car(Entity):
         elif flag == CollisionFlag.Reward:
             reward += 5 * speed_factor if speed_factor > 0.01 else -1  # Punish if agent get stuck
         elif flag == CollisionFlag.Nothing:
-            reward -= 0.1 + (1 - speed_factor)
+            reward -= 0.5 * (1 - speed_factor)
 
         return reward
