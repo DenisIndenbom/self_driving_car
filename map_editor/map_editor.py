@@ -12,7 +12,7 @@ LINE_COLOR = (255, 0, 0)
 REWARD_COLOR = (0, 255, 0)
 GRID_COLOR = (40, 40, 40)
 BG_COLOR = (0, 0, 0)
-POINT_RADIUS = 5
+POINT_RADIUS = 3
 GRID_SIZE = 20
 
 # Pygame setup
@@ -62,6 +62,12 @@ def draw_rewards(rewards, zoom, offset):
             pygame.draw.line(screen, REWARD_COLOR, start, end, 2)
 
 
+def draw_points(points, color, zoom, offset):
+    for point in points:
+        end = [(point[0] + offset[0]) * zoom, (point[1] + offset[1]) * zoom]
+        pygame.draw.circle(screen, color, end, POINT_RADIUS)
+
+
 # Snap point to grid
 def snap_to_grid(pos):
     return [round(pos[0] / GRID_SIZE) * GRID_SIZE, round(pos[1] / GRID_SIZE) * GRID_SIZE]
@@ -103,6 +109,7 @@ def main():
                 else:
                     while len(borders) <= layer_index:
                         borders.append([])
+
                     borders[layer_index].append(pos)
 
             elif event.type == pygame.KEYDOWN:
@@ -139,8 +146,11 @@ def main():
         for idx, line in enumerate(borders):
             color = LINE_COLOR if idx == layer_index else (100, 0, 0)
             draw_lines(line, color, zoom, offset)
+            draw_points(line, color, zoom, offset)
 
         draw_rewards(rewards, zoom, offset)
+        if placing_reward_point is not None:
+            draw_points([placing_reward_point], REWARD_COLOR, zoom, offset)
 
         pygame.display.flip()
         clock.tick(FPS)
