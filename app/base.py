@@ -102,6 +102,10 @@ class Agent(ABC):
         pass
 
     @abstractmethod
+    def mutate_policy(self, mutation_rate: float) -> 'Agent':
+        pass
+
+    @abstractmethod
     def eval(self):
         pass
 

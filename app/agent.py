@@ -43,6 +43,9 @@ class PlayerAgent(Agent):
     def merge_policy(self, agent: Agent, ratio: float) -> Agent:
         pass
 
+    def mutate_policy(self, mutation_rate: float) -> 'Agent':
+        pass
+
     def eval(self):
         pass
 
@@ -127,6 +130,13 @@ class QCarAgent(Agent):
             raise TypeError('Can only merge policies with another QCarAgent.')
 
         self.policy = (1 - ratio) * self.policy + ratio * agent.policy
+
+        return self
+
+    def mutate_policy(self, mutation_rate: float) -> 'Agent':
+        mutation = np.random.rand(self.state_size, self.action_size)
+
+        self.policy += mutation_rate * mutation
 
         return self
 
