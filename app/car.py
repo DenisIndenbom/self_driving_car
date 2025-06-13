@@ -3,9 +3,9 @@ import math
 from pygame import draw as pygame_draw
 from pygame import image, Surface, transform
 
-from base import *
-from components import *
-from utils import *
+from .base import *
+from .components import *
+from .utils import *
 
 __all__ = ['Car', 'CarState', 'CarAction']
 
@@ -53,7 +53,7 @@ class Car(Entity):
         width, height = (int(214 * 0.2), int(100 * 0.2))
 
         try:
-            self.original_img = image.load('../sprites/Black_viper.png').convert_alpha()
+            self.original_img = image.load('./sprites/Black_viper.png').convert_alpha()
             self.original_img = transform.scale(self.original_img, (width, height))
             self.img = self.original_img
         except Exception:
@@ -215,10 +215,10 @@ class Car(Entity):
         speed_factor = (self.speed / self.max_speed)
 
         if flag == CollisionFlag.Collide:
-            reward -= 1 + speed_factor
+            reward -= 3 + 2 * abs(speed_factor)
         elif flag == CollisionFlag.Reward:
-            reward += 5 * speed_factor if speed_factor > 0.01 else -1  # Punish if agent get stuck
+            reward += (1 + 2 * speed_factor) if speed_factor > 0.01 else -1  # Punish if agent get stuck
         elif flag == CollisionFlag.Nothing:
-            reward -= 0.5 * (1 - speed_factor)
+            reward -= 1 * abs(1 - speed_factor)
 
         return reward

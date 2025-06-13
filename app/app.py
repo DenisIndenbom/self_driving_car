@@ -1,16 +1,20 @@
+import os
 import random
 
 import pygame
 
-import config
-from agent import QCarAgent
-from base import Entity, Agent, Map, State
-from car import Car
+from .base import Entity, Agent, Map, State
+
+__all__ = ['App']
 
 
 class App:
-    def __init__(self, screen_size: tuple[int, int], genetic_algorithm: bool = False, is_render: bool = True):
+    def __init__(self, screen_size: tuple[int, int],
+                 save_path: str = './',
+                 genetic_algorithm: bool = False,
+                 is_render: bool = True):
         self.screen_size = screen_size
+        self.save_path = save_path
         self.genetic_algorithm = genetic_algorithm
         self.is_render = is_render
 
@@ -90,7 +94,7 @@ class App:
         for idx, agent in enumerate(self.agents):
             agent.update_policy()
             if save_agents:
-                agent.save(f'agents/agent_{idx}.model')
+                agent.save(os.path.join(self.save_path, f'agent_{idx}.model'))
 
     def _elect_best(self, election_size: float, fusion_ratio: float, mutation_rate: float):
         # Sort agents by reward (descending)
@@ -99,7 +103,7 @@ class App:
         top_agents = [agent for agent, _ in ranked[:elite_cutoff]]
 
         for idx, agent in enumerate(top_agents):
-            agent.save(f'agents/top_agent_{idx}.model')
+            agent.save(os.path.join(self.save_path, f'top_agent_{idx}.model'))
 
         # Generate new population
         new_agents = []
@@ -121,22 +125,12 @@ class App:
 
     def _render(self) -> float:
         self.screen.fill((0, 0, 0))
+
         self.map.draw(self.screen)
+
         for obj in self.objects:
             obj.render(self.screen)
 
         pygame.display.flip()
 
         return self.clock.tick(60) / 1000
-
-
-if __name__ == '__main__':
-    app = App((config.DISPLAY_WIDTH, config.DISPLAY_HEIGHT), genetic_algorithm=True, is_render=True)
-
-    emap = Map('../map.json')
-    objs = [Car((520, 670), 0, emap) for _ in range(60)]
-    agents = [QCarAgent(obj) for obj in objs]
-
-    app.setup(emap, objs, agents)
-    app.run(10 ** 6)
-    exit()

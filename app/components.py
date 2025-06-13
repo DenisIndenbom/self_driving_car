@@ -1,8 +1,8 @@
 import math
 from enum import Enum
 
-from base import Map, Line, Component
-from utils import line_intersection
+from .base import Map, Line, Component
+from .utils import line_intersection
 
 __all__ = ['BoxCollision', 'CollisionFlag']
 
