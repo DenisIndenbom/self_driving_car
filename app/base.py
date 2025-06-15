@@ -83,7 +83,7 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def observe(self, state: State, action: Action, new_state: State, reward: int | float):
+    def observe(self, state: State, action: Action, new_state: State, reward: int | float, done: bool):
         pass
 
     @abstractmethod

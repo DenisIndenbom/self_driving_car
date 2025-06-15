@@ -9,12 +9,15 @@ __all__ = ['App']
 
 
 class App:
-    def __init__(self, screen_size: tuple[int, int],
+    def __init__(self,
+                 screen_size: tuple[int, int],
                  save_path: str = './',
+                 update_policy_freq: int = 5,
                  genetic_algorithm: bool = False,
                  is_render: bool = True):
         self.screen_size = screen_size
         self.save_path = save_path
+        self.update_policy_freq = update_policy_freq
         self.genetic_algorithm = genetic_algorithm
         self.is_render = is_render
 
@@ -42,10 +45,12 @@ class App:
         self.objects = objects
         self.agents = agents
 
-    def run(self, epochs: int = 1, save_agents: bool = True):
-        for epoch in range(epochs):
+    def run(self, episodes: int = 1, save_agents: bool = True):
+        for epoch in range(episodes):
             self._reset_episode()
             delta_time = 1 / 60
+
+            step = 0
 
             while not all(self.dones):
                 if self._handle_events():
@@ -53,15 +58,18 @@ class App:
 
                 self._step_agents(delta_time)
 
+                if not self.genetic_algorithm and step % self.update_policy_freq == 0:
+                    self._update_agents(save_agents)
+
                 if self.is_render:
                     delta_time = self._render()
 
+                step += 1
+
             if self.genetic_algorithm:
                 self._elect_best(0.25, 0.5, 0.05)  # Hard code, i know
-            else:
-                self._update_agents(save_agents)
 
-            self._log_epoch(epoch)
+            self._log_episode(epoch)
 
     def _reset_episode(self):
         self.states = [obj.reset() for obj in self.objects]
@@ -84,7 +92,7 @@ class App:
 
             action = agent.step(state)
             new_state, reward, done = obj.update(action, delta_time)
-            agent.observe(state, action, new_state, reward)
+            agent.observe(state, action, new_state, reward, done)
 
             self.states[idx] = new_state
             self.rewards[idx] += reward
@@ -117,11 +125,14 @@ class App:
         # Replace old agents
         self.agents = new_agents
 
-    def _log_epoch(self, epoch: int):
+    def _log_episode(self, episode: int):
         avg_reward = sum(self.rewards) / len(self.rewards)
-        print(
-            f'Epoch {epoch + 1} | Avg Reward: {avg_reward:.2f} | Max: {max(self.rewards):.2f} | Min: {min(self.rewards):.2f}'
-        )
+        if self.genetic_algorithm:
+            print(
+                f'Generation {episode + 1} | Avg Reward: {avg_reward:.2f} | Max: {max(self.rewards):.2f} | Min: {min(self.rewards):.2f}'
+            )
+        else:
+            print(f'Episode {episode + 1} | reward: {avg_reward:.2f}')
 
     def _render(self) -> float:
         self.screen.fill((0, 0, 0))

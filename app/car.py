@@ -217,8 +217,8 @@ class Car(Entity):
         if flag == CollisionFlag.Collide:
             reward -= 3 + 2 * abs(speed_factor)
         elif flag == CollisionFlag.Reward:
-            reward += (1 + 2 * speed_factor) if speed_factor > 0.01 else -1  # Punish if agent get stuck
+            reward += (1 + 2 * speed_factor) if speed_factor > 0.2 else -1  # Punish if agent get stuck
         elif flag == CollisionFlag.Nothing:
-            reward -= 1 * abs(1 - speed_factor)
+            reward += 0.3 * speed_factor if speed_factor > 0.2 else -0.2
 
         return reward
