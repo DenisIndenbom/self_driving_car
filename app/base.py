@@ -118,9 +118,9 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def save(self, path: str):
+    def save(self, path: str, agent_id: int = 0):
         pass
 
     @abstractmethod
-    def load(self, path: str):
+    def load(self, path: str, agent_id: int = 0):
         pass

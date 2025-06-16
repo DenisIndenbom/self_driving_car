@@ -1,6 +1,7 @@
 import pickle
 import random
 from collections import deque
+from os.path import join, exists
 
 import keyboard as kb
 import numpy as np
@@ -58,10 +59,10 @@ class PlayerAgent(Agent):
     def reset(self):
         pass
 
-    def save(self, path: str):
+    def save(self, path: str, agent_id: int = 0):
         pass
 
-    def load(self, path: str):
+    def load(self, path: str, agent_id: int = 0):
         pass
 
 
@@ -77,7 +78,7 @@ class QCarAgent(Agent):
         self.car = car
         self.discretization = discretization
         self.state_size = discretization ** car.ladar_num
-        self.action_size = 6
+        self.action_size = 9
         self.policy = np.random.rand(self.state_size, self.action_size)
         self.divisor = car.ladar_depth // discretization
 
@@ -152,25 +153,25 @@ class QCarAgent(Agent):
     def reset(self):
         self.policy = np.random.rand(self.state_size, self.action_size)
 
-    def save(self, path: str):
-        with open(path, 'wb') as f:
+    def save(self, path: str, agent_id: int = 0):
+        with open(join(path, f'agent_{agent_id}.model'), 'wb') as f:
             pickle.dump(self.policy, f)
 
-    def load(self, path: str):
-        with open(path, 'rb') as f:
+    def load(self, path: str, agent_id: int = 0):
+        with open(join(path, f'agent_{agent_id}.model'), 'rb') as f:
             self.policy = pickle.load(f)
 
 
 class DQN(nn.Module):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, action_dim, hidden_dim):
         super(DQN, self).__init__()
 
         self.model = nn.Sequential(
-            nn.Linear(state_dim, 128),
+            nn.Linear(state_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(128, action_dim)
+            nn.Linear(hidden_dim, action_dim)
         )
 
     def forward(self, x):
@@ -184,6 +185,7 @@ class DQNCarAgent(Agent):
                  car: Car,
                  state_dim: int,
                  action_dim: int,
+                 hidden_dim: int,
                  lr: float = 1e-3,
                  gamma: float = 0.9,
                  target_update_freq: int = 1000,
@@ -212,8 +214,8 @@ class DQNCarAgent(Agent):
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.q_network = DQN(state_dim, action_dim).to(self.device)
-        self.target_network = DQN(state_dim, action_dim).to(self.device)
+        self.q_network = DQN(state_dim, action_dim, hidden_dim).to(self.device)
+        self.target_network = DQN(state_dim, action_dim, hidden_dim).to(self.device)
         self.target_network.load_state_dict(self.q_network.state_dict())
 
         self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.lr)
@@ -260,7 +262,7 @@ class DQNCarAgent(Agent):
         return states, actions, rewards, next_states, dones
 
     def update_policy(self):
-        if len(self.replay_buffer) < self.batch_size:
+        if len(self.replay_buffer) < self.batch_size or not self.training:
             return
 
         states, actions, rewards, next_states, dones = self._sample_batch()
@@ -307,8 +309,13 @@ class DQNCarAgent(Agent):
     def reset(self):
         raise NotImplementedError('DQN do not support reset policy')
 
-    def save(self, path: str):
-        torch.save(self.q_network.state_dict(), path)
+    def save(self, path: str, agent_id: int = 0):
+        torch.save(self.q_network.state_dict(), join(path, f'agent_{agent_id:04d}.model'))
+        torch.save(self.optimizer.state_dict(), join(path, f'agent_{agent_id:04d}.optimizer'))
 
-    def load(self, path: str):
-        self.q_network.load_state_dict(torch.load(path))
+    def load(self, path: str, agent_id: int = 0):
+        self.q_network.load_state_dict(torch.load(join(path, f'agent_{agent_id:04d}.model')))
+        self.target_network.load_state_dict(self.q_network.state_dict())
+
+        if exists(join(path, f'agent_{agent_id:04d}.optimizer')):
+            self.optimizer.load_state_dict(torch.load(join(path, f'agent_{agent_id:04d}.optimizer')))

@@ -1,4 +1,3 @@
-import os
 import random
 
 import pygame
@@ -102,7 +101,7 @@ class App:
         for idx, agent in enumerate(self.agents):
             agent.update_policy()
             if save_agents:
-                agent.save(os.path.join(self.save_path, f'agent_{idx}.model'))
+                agent.save(self.save_path, idx)
 
     def _elect_best(self, election_size: float, fusion_ratio: float, mutation_rate: float):
         # Sort agents by reward (descending)
@@ -111,7 +110,7 @@ class App:
         top_agents = [agent for agent, _ in ranked[:elite_cutoff]]
 
         for idx, agent in enumerate(top_agents):
-            agent.save(os.path.join(self.save_path, f'top_agent_{idx}.model'))
+            agent.save(self.save_path, idx)
 
         # Generate new population
         new_agents = []
